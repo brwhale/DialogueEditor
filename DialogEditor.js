@@ -1,6 +1,10 @@
 let nodes = [];
 
-function addNode() {}
+function addNode() {
+    nodes.push({message: "", visScript: "", actScript: ""});
+
+    drawNodes();
+}
 
 function connectResponse(parent, child) { }
 
@@ -15,7 +19,11 @@ function saveToFile() { }
 function loadFromFile() { }
 
 function drawNodes() {
-    document.querySelector("p").innerHTML = "changed";
+    let selector = document.querySelector("p");
+    selector.innerHTML = "";
+    nodes.forEach((item, index, array) => {
+        selector.innerHTML += index.toString() + ", " + JSON.stringify(item) + "</br>";
+      });
 }
 
 drawNodes();
