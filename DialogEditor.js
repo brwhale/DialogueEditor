@@ -1,18 +1,41 @@
 let nodes = [];
 
 function addNode() {
-    nodes.push({message: "", visScript: "", actScript: ""});
+    nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", children: []});
 
     drawNodes();
 }
 
-function connectResponse(parent, child) { }
+function deleteNode(index) {
+    nodes.splice(index, 1);
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id > index) {
+            nodes[i].id -= 1;
+        }
+        nodes[i].children.filter(function(item){ return item !== index});
+        nodes[i].children.forEach(function(part, idx) {
+            if (nodes[i].children[idx] > index) {
+                nodes[i].children[idx] -= 1;
+            }
+          });
+    }
+}
 
-function setMessage(index, message) { }
+function connectResponse(parent, child) {
+    parent.children.push(child.id);
+ }
 
-function setVisibilityScript(index, script) { }
+function setMessage(index, message) {
+    nodes[index].message = message;
+ }
 
-function setActivationScript(index, script) { }
+function setVisibilityScript(index, script) { 
+    nodes[index].hideScript = script;
+}
+
+function setActivationScript(index, script) { 
+    nodes[index].actScript = script;
+}
 
 function saveToFile() { }
 
