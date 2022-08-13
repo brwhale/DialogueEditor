@@ -1,7 +1,7 @@
 let nodes = [];
 
 function addNode() {
-    nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", children: []});
+    nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", soundFile: "", children: []});
 
     drawNodes();
 }
@@ -42,10 +42,25 @@ function saveToFile() { }
 function loadFromFile() { }
 
 function drawNodes() {
-    let selector = document.querySelector("p");
+    let selector = document.querySelector("#nodesBox");
     selector.innerHTML = "";
     nodes.forEach((item, index, array) => {
-        selector.innerHTML += index.toString() + ", " + JSON.stringify(item) + "</br>";
+        let content = "<div class='node'>";
+        //content += index.toString() + ", " + JSON.stringify(item) + "</br>";
+        content += "<textarea class='message' placeholder='Message'>";
+        content += item.message;
+        content += "</textarea>";
+        content += "<textarea class='message' placeholder='Visibility Script'>";
+        content += item.hideScript;
+        content += "</textarea>";
+        content += "<textarea class='message' placeholder='Activation Script'>";
+        content += item.actScript;
+        content += "</textarea>";
+        content += "<input placeholder='Sound File'>";
+        content += item.soundFile;
+        content += "</input>";
+        content += "</div>";
+        selector.innerHTML += content;
       });
 }
 
