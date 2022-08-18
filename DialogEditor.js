@@ -2,9 +2,34 @@ let nodes = [];
 let addingChildrenNode = -1;
 let draggingNode = -1;
 let resizeMode = false;
+let minDist = 250;
+
+function getNewNodePlacement() {
+    let usedPositions = [];
+    let size = {x:400, y:200};
+    nodes.forEach((item, index, array) => {
+        usedPositions.push(item.pos);
+        size.x = Math.max(size.x, item.pos.x + 400);
+        size.y = Math.max(size.y, item.pos.y + 200);
+    });
+    let h = 500;
+    let pos = ({x:100, y:0});
+    let dist = 100;
+    let colMode = false;
+    while (usedPositions.some(e => Math.abs(e.x - pos.x) < minDist && Math.abs(e.y - pos.y) < minDist)) {
+        pos.y += h;
+        if (pos.y > size.y) {
+            if (pos.x < size.x && pos.x < pos.y) {
+                pos.x += h;
+                pos.y = 0;
+            }
+        } 
+    }
+    return pos;
+}
 
 function addNode() {
-    nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", soundFile: "", width: 400, pos: {x: 100+nodes.length, y: document.querySelector("#nodesBox").clientHeight }, children: []});
+    nodes.push({id: nodes.length, color: 0, message: "", hideScript: "", actScript: "", soundFile: "", width: 400, pos: getNewNodePlacement(), children: []});
 
     addingChildrenNode = -1;
     drawNodes();
@@ -37,9 +62,13 @@ function clearNodes() {
 
 function clickedNode(index) {
     event.stopPropagation();
-    if (addingChildrenNode >=0 && addingChildrenNode != index) {
+    if (addingChildrenNode >=0 && addingChildrenNode != index && (!nodes[index].color || nodes[index].color != nodes[addingChildrenNode].color)) {
         if (!nodes[addingChildrenNode].children.includes(index)) {
+            if (!nodes[addingChildrenNode].color) {
+                nodes[addingChildrenNode].color = 1;
+            }
             nodes[addingChildrenNode].children.push(index);
+            nodes[index].color = nodes[addingChildrenNode].color *-1;
         }
         addingChildrenNode = -1;
         drawNodes();
@@ -120,14 +149,33 @@ function textAreaAdjust(element) {
     element.style.height = "1px";
     element.style.height = (25+element.scrollHeight)+"px";
     return element.style.height != oldh;
-  }
+}
+
+function colorChildren(node, color) {
+    if (node.color == 0) {
+        node.color = color;
+        node.children.forEach((c, index, array) => {
+            colorChildren(nodes[c], color *-1);           
+        });
+    }
+}
+
+function recolorNodes() {
+    nodes.forEach((item, index, array) => {
+        item.color = 0;
+    });
+    if (nodes.length) {
+        if (nodes[0].color == 0) {
+            colorChildren(nodes[0], 1);
+        }
+    }
+}
 
 function sortNodes() {
     let alreadyMoved = [];
     let usedPositions = [];
     let y = 40;
     let h = 500;
-    let minDist = 250;
     nodes.forEach((item, index, array) => {
         if (!alreadyMoved.includes(index)) {
             alreadyMoved.push(index);
@@ -150,6 +198,7 @@ function sortNodes() {
             }
         });
       });
+    recolorNodes();
     drawNodes();
 }
 
@@ -177,7 +226,13 @@ function drawNodes() {
         if (biggest.y < item.pos.y) {
             biggest.y = item.pos.y;
         }
-        let content = "<div id='node"+index+"' class='node absolute' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'>";
+        let classes = 'node absolute';
+        if (item.color < 0) {
+            classes += ' alt-color';
+        } else if (item.color > 0) {
+            classes += ' alt-color2';
+        }
+        let content = "<div id='node"+index+"' class='"+classes+"' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'>";
         content += "<p style='display:inline-block;'>Id: " + index + " </p>";
         content += "<a style='display:inline-block;float:right;'class='button stretcher' onmousedown='resizeNode(" + index + ")'>Resize</a>";
         content += "<a style='display:inline-block;float:right;'class='button mover' onmousedown='mousedownNode(" + index + ")'>Move</a>";
@@ -272,6 +327,21 @@ function repairNodeMetadata() {
         }
         if (!item.width) {
             item.width = 400;
+        }
+        if (typeof item.message == 'undefined') {
+                item.message = "";
+        }
+        if (typeof item.actScript == 'undefined') {
+            item.actScript = "";
+        }
+        if (typeof item.hideScript == 'undefined') {
+            item.hideScript = "";
+        }
+        if (typeof item.soundFile == 'undefined') {
+            item.soundFile = "";
+        }
+        if (typeof item.color == 'undefined') {
+            item.color = 0;
         }
       });
 }

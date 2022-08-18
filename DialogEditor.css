@@ -1,8 +1,16 @@
 .node {
-    background-color: aquamarine;
+    background-color: darkgrey;
     margin: 2em;
     padding: 1em;
     border-radius: 1em;
+}
+
+.alt-color2 {
+    background-color: aquamarine;
+}
+
+.alt-color {
+    background-color: gold;
 }
 
 .button {
