@@ -26,6 +26,15 @@ function deleteNode(index) {
     drawNodes();
 }
 
+function clearNodes() {
+    clearSelections();
+    nodes = [];
+    let selector = document.querySelector("#nodesBox");
+    selector.style.width = "0px";
+    selector.style.height = "0px";
+    drawNodes();
+}
+
 function clickedNode(index) {
     event.stopPropagation();
     if (addingChildrenNode >=0 && addingChildrenNode != index) {
@@ -50,7 +59,7 @@ function getArrow(start, end) {
     let height = Math.max(start.y, end.y) - miny + padding*2;
     let minx = Math.min(start.x, end.x);
     let width = Math.max(start.x, end.x) - minx + padding*2;
-    let color = "red";
+    let color = end.y > start.y ? "red" : "blue";
     let content = '<svg width="'+width+'" height="'+height+'" style="pointer-events: none;position: absolute;top: ' + (miny-padding) + 'px;left: '+(minx-padding)+'px;">';
     content += '<defs><marker id="arrowtip" markerWidth="13" markerHeight="13" refx="2" refy="6" orient="auto">';
     content += '<path d="M2,2 L2,11 L10,6 L2,2" style="fill:'+color+';" /></marker></defs>';
@@ -118,14 +127,22 @@ function sortNodes() {
     let usedPositions = [];
     let y = 40;
     let h = 500;
+    let minDist = 250;
     nodes.forEach((item, index, array) => {
+        if (!alreadyMoved.includes(index)) {
+            alreadyMoved.push(index);
+            while (usedPositions.some(e => Math.abs(e.x - item.pos.x) < 200 && Math.abs(e.y - item.pos.y) < 200)) {
+                item.pos.x += h;
+            }
+            usedPositions.push(item.pos);
+        }
         item.children.forEach((c, i, arr) => {
             if (!c) return;
             if (!alreadyMoved.includes(c)) {
                 alreadyMoved.push(c);
-                let pos = {x:i * 500 + item.pos.x, y: h + item.pos.y};
-                while (usedPositions.some(e => e.x == pos.x && e.y == pos.y)) {
-                    pos.x += 500;
+                let pos = {x:i * h + item.pos.x, y: h + item.pos.y};
+                while (usedPositions.some(e => Math.abs(e.x - pos.x) < minDist && Math.abs(e.y - pos.y) < minDist)) {
+                    pos.x += h;
                 }
                 usedPositions.push(pos);
                 nodes[c].pos.x = pos.x;
@@ -173,7 +190,7 @@ function drawNodes() {
         content += "<textarea id='actScript"+index+"' class='message' style='width: "+item.width+"px;' placeholder='Activation Script' onkeyup='updateActScript("+index+", this)'>";
         content += item.actScript;
         content += "</textarea>";
-        content += "<input id='soundFile"+index+"' class='message' placeholder='Sound File' onkeyup='updateFile("+index+", this)' value='";
+        content += "<input id='soundFile"+index+"' class='message' style='width: "+item.width+"px;' placeholder='Sound File' onkeyup='updateFile("+index+", this)' value='";
         content += item.soundFile;
         content += "'/>";
         content += "<a style='display:inline-block;'class='button deleter' onclick='deleteNode(" + index + ")'>Delete</a>";
@@ -210,7 +227,14 @@ addEventListener('mousemove', (event) => {
             nodes[draggingNode].pos.x += event.movementX;
             nodes[draggingNode].pos.y += event.movementY;
         }
-        drawNodes();
+        let elem = document.getElementById("node"+draggingNode);
+        elem.style.top = nodes[draggingNode].pos.y + "px";
+        elem.style.left = nodes[draggingNode].pos.x + "px";
+        elem.style.width = nodes[draggingNode].width + "px";
+        Array.from(elem.getElementsByClassName("message")).forEach((e) => {
+            e.style.width = elem.style.width;
+        });
+        drawArrows();
     }
 });
 
@@ -261,6 +285,7 @@ function importFile(e) {
     reader.onload = function(e) {
         nodes = JSON.parse(e.target.result);
         repairNodeMetadata();
+        sortNodes();
         drawNodes();
     };
     reader.readAsText(file);
