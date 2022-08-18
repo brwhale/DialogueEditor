@@ -26,26 +26,6 @@ function deleteNode(index) {
     drawNodes();
 }
 
-function connectResponse(parent, child) {
-    parent.children.push(child.id);
- }
-
-function setMessage(index, message) {
-    nodes[index].message = message;
- }
-
-function setVisibilityScript(index, script) { 
-    nodes[index].hideScript = script;
-}
-
-function setActivationScript(index, script) { 
-    nodes[index].actScript = script;
-}
-
-function saveToFile() { }
-
-function loadFromFile() { }
-
 function clickedNode(index) {
     event.stopPropagation();
     if (addingChildrenNode >=0 && addingChildrenNode != index) {
@@ -80,21 +60,24 @@ function getArrow(start, end) {
 }
 
 function updateMessage(index, elem) {
-    textAreaAdjust(elem);
     nodes[index].message = elem.value;
-    drawArrows();
+    if (textAreaAdjust(elem)) {
+        drawArrows();
+    }
 }
 
 function updateVisScript(index, elem) {
-    textAreaAdjust(elem);
     nodes[index].hideScript = elem.value;
-    drawArrows();
+    if (textAreaAdjust(elem)) {
+        drawArrows();
+    }
 }
 
 function updateActScript(index, elem) {
-    textAreaAdjust(elem);
     nodes[index].actScript = elem.value;
-    drawArrows();
+    if (textAreaAdjust(elem)) {
+        drawArrows();
+    }
 }
 
 function updateFile(index, elem) {
@@ -124,8 +107,10 @@ function clearSelections() {
 }
 
 function textAreaAdjust(element) {
+    let oldh = element.style.height;
     element.style.height = "1px";
     element.style.height = (25+element.scrollHeight)+"px";
+    return element.style.height != oldh;
   }
 
 function sortNodes() {
