@@ -13,17 +13,24 @@ function getNewNodePlacement() {
         size.y = Math.max(size.y, item.pos.y + 200);
     });
     let h = 500;
-    let pos = ({x:100, y:0});
+    let pos = ({x:200, y:0});
     let dist = 100;
-    let colMode = false;
+    let colMode = true;
     while (usedPositions.some(e => Math.abs(e.x - pos.x) < minDist && Math.abs(e.y - pos.y) < minDist)) {
-        pos.y += h;
-        if (pos.y > size.y) {
-            if (pos.x < size.x && pos.x < pos.y) {
-                pos.x += h;
-                pos.y = 0;
+        if (colMode) {
+            pos.y += h;
+            if (pos.y > size.y) {
+                colMode = false;
+                pos.y -= h;
             }
-        } 
+        } else {
+            pos.x += h;
+            if (pos.x > Math.max(size.x, window.innerWidth)) {
+                pos.x = 200;
+                pos.y += h;
+                colMode = true;
+            }
+        }
     }
     return pos;
 }
@@ -55,8 +62,8 @@ function clearNodes() {
     clearSelections();
     nodes = [];
     let selector = document.querySelector("#nodesBox");
-    selector.style.width = "0px";
-    selector.style.height = "0px";
+    selector.style.width = "800px";
+    selector.style.height = "800px";
     drawNodes();
 }
 
@@ -82,6 +89,11 @@ function wantsChild(index) {
     }
 }
 
+function deleteChildren(index) {
+    nodes[index].children.length = 0;
+    drawArrows();
+}
+
 function getArrow(start, end) {
     let padding = 20;
     let miny = Math.min(start.y, end.y);
@@ -89,11 +101,12 @@ function getArrow(start, end) {
     let minx = Math.min(start.x, end.x);
     let width = Math.max(start.x, end.x) - minx + padding*2;
     let color = end.y > start.y ? "red" : "blue";
+    let arrowtipid = "arrowtip_" + color;
     let content = '<svg width="'+width+'" height="'+height+'" style="pointer-events: none;position: absolute;top: ' + (miny-padding) + 'px;left: '+(minx-padding)+'px;">';
-    content += '<defs><marker id="arrowtip" markerWidth="13" markerHeight="13" refx="2" refy="6" orient="auto">';
+    content += '<defs><marker id="'+arrowtipid+'" markerWidth="13" markerHeight="13" refx="2" refy="6" orient="auto">';
     content += '<path d="M2,2 L2,11 L10,6 L2,2" style="fill:'+color+';" /></marker></defs>';
     content += '<path d="M' + (start.x-minx+padding) + "," + (start.y-miny+padding) + ' L' + (end.x-minx+padding) + "," + (end.y-miny+padding); 
-    content += '"style="stroke:'+color+'; stroke-width: 1.25px; fill: none; marker-end: url(#arrowtip);"/></svg>';
+    content += '"style="stroke:'+color+'; stroke-width: 1.25px; fill: none; marker-end: url(#'+arrowtipid+');"/></svg>';
     return content;
 }
 
@@ -250,6 +263,7 @@ function drawNodes() {
         content += "'/>";
         content += "<a style='display:inline-block;'class='button deleter' onclick='deleteNode(" + index + ")'>Delete</a>";
         content += "<a style='display:inline-block;float: right;'class='button adder' onclick='wantsChild(" + index + ")'>Add Child</a>";
+        content += "<a style='display:inline-block;float: right;'class='button deleter' onclick='deleteChildren(" + index + ")'>Clear Children</a>";
         content += "</div>";
         selector.innerHTML += content;
       });
@@ -259,8 +273,8 @@ function drawNodes() {
       });
 
       if (biggest.x > 0) {
-        selector.style.width = 500+biggest.x+"px";
-        selector.style.height = 400+biggest.y+"px";
+        selector.style.width = 800+biggest.x+"px";
+        selector.style.height = 800+biggest.y+"px";
       }
 
       drawArrows();
@@ -321,15 +335,17 @@ function exportJson() {
 }
 
 function repairNodeMetadata() {
+    let needsSorting = false;
     nodes.forEach((item, index, array) => {
         if (!item.pos) {
             item.pos = {x:100+index, y:index*350};
+            needsSorting = true;
         }
         if (!item.width) {
             item.width = 400;
         }
         if (typeof item.message == 'undefined') {
-                item.message = "";
+            item.message = "";
         }
         if (typeof item.actScript == 'undefined') {
             item.actScript = "";
@@ -344,6 +360,7 @@ function repairNodeMetadata() {
             item.color = 0;
         }
       });
+    return needsSorting;
 }
 
 function importFile(e) {
@@ -354,8 +371,9 @@ function importFile(e) {
     var reader = new FileReader();
     reader.onload = function(e) {
         nodes = JSON.parse(e.target.result);
-        repairNodeMetadata();
-        sortNodes();
+        if (repairNodeMetadata()) {
+            sortNodes();
+        }
         drawNodes();
     };
     reader.readAsText(file);
