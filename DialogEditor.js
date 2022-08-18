@@ -1,5 +1,6 @@
 let nodes = [];
 let addingChildrenNode = -1;
+let draggingNode = -1;
 
 function addNode() {
     nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", soundFile: "", pos: {x: 100, y: 200 * nodes.length}, children: []});
@@ -44,7 +45,7 @@ function saveToFile() { }
 function loadFromFile() { }
 
 function clickedNode(index) {
-    console.log("clicked " + index);
+    event.stopPropagation();
     if (addingChildrenNode >=0 && addingChildrenNode != index) {
         nodes[addingChildrenNode].children.push(index);
         addingChildrenNode = -1;
@@ -53,8 +54,10 @@ function clickedNode(index) {
 }
 
 function wantsChild(index) {
-    addingChildrenNode = index;
-    console.log("wantsChild " + index);
+    if (addingChildrenNode < 0) {
+        event.stopPropagation();
+        addingChildrenNode = index;
+    }
 }
 
 function getArrow(start, end) {
@@ -68,8 +71,37 @@ function getArrow(start, end) {
     content += '<path d="M2,2 L2,11 L10,6 L2,2" style="fill:red;" /></marker></defs>';
     content += '<path d="M' + (start.x-minx+padding) + "," + (start.y-miny+padding) + ' L' + (end.x-minx+padding) + "," + (end.y-miny+padding); 
     content += '"style="stroke:red; stroke-width: 1.25px; fill: none; marker-end: url(#arrowtip);"/></svg>';
-    console.log(content);
     return content;
+}
+
+function updateMessage(index) {
+    nodes[index].message = document.getElementById("message"+index).value;
+}
+
+function updateVisScript(index) {
+    nodes[index].hideScript = document.getElementById("hideScript"+index).value;
+}
+
+function updateActScript(index) {
+    nodes[index].actScript = document.getElementById("actScript"+index).value;
+}
+
+function updateFile(index) {
+    nodes[index].soundFile = document.getElementById("soundFile"+index).value;
+}
+
+function mousedownNode(index) {
+    event.stopPropagation();
+    draggingNode = index;
+}
+
+function mouseup() {
+    draggingNode = -1;
+}
+
+function clearSelections() {
+    draggingNode = -1;
+    addingChildrenNode = -1;
 }
 
 function drawNodes() {
@@ -77,19 +109,19 @@ function drawNodes() {
     let selector = document.querySelector("#nodesBox");
     selector.innerHTML = "";
     nodes.forEach((item, index, array) => {
-        let content = "<div class='node absolute' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'>";
+        let content = "<div id='node"+index+"' class='node absolute' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'onmousedown='mousedownNode(" + index + ")'onmouseup='mouseup()'>";
         content += "<p>" + index.toString() + "</p>";
         content += "<a class='button' onclick='wantsChild(" + index + ")'>Add Child</a>";
-        content += "<textarea class='message' placeholder='Message'>";
+        content += "<textarea id='message"+index+"'class='message' placeholder='Message' onkeyup='updateMessage("+index+")'>";
         content += item.message;
         content += "</textarea>";
-        content += "<textarea class='message' placeholder='Visibility Script'>";
+        content += "<textarea id='hideScript"+index+"' class='message' placeholder='Visibility Script' onkeyup='updateVisScript("+index+")'>";
         content += item.hideScript;
         content += "</textarea>";
-        content += "<textarea class='message' placeholder='Activation Script'>";
+        content += "<textarea id='actScript"+index+"' class='message' placeholder='Activation Script' onkeyup='updateActScript("+index+")'>";
         content += item.actScript;
         content += "</textarea>";
-        content += "<input placeholder='Sound File'>";
+        content += "<input id='soundFile"+index+"' placeholder='Sound File' onkeyup='updateFile("+index+")'>";
         content += item.soundFile;
         content += "</input>";
         content += "</div>";
@@ -111,8 +143,49 @@ function updateAddArrow(origin, point) {
 addEventListener('mousemove', (event) => {
     if (addingChildrenNode >= 0) {
         let origin = nodes[addingChildrenNode].pos;
-        updateAddArrow({x:origin.x + 100, y:origin.y+130}, {x:event.clientX, y:event.clientY});
+        updateAddArrow({x:origin.x + 100, y:origin.y+130}, {x:event.clientX + window.pageXOffset, y:event.clientY + window.pageYOffset });
+    } else if (draggingNode >= 0) {
+        nodes[draggingNode].pos.x += event.movementX;
+        nodes[draggingNode].pos.y += event.movementY;
+        drawNodes();
     }
 });
 
 drawNodes();
+
+function download(content) {
+    let a = document.createElement('a');
+    let file = new Blob([content], {type: "text/plain"});
+    
+    a.href= URL.createObjectURL(file);
+    a.download = document.getElementById("exportFile").value;
+    a.click();
+  
+    URL.revokeObjectURL(a.href);
+
+    a.remove();
+  };
+
+function getJson() {
+    return JSON.stringify(nodes);
+}
+
+function exportJson() {
+    download(getJson());
+}
+
+function importFile(e) {
+    var file = e.target.files[0];
+    if (!file) {
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        nodes = JSON.parse(e.target.result);
+        drawNodes();
+    };
+    reader.readAsText(file);
+  }
+  
+document.getElementById('fileImport')
+    .addEventListener('change', importFile, false);
