@@ -17,12 +17,24 @@
     cursor: pointer;
 }
 
+.deleter {
+    background-color: firebrick;
+}
+
 .mover:hover {
     cursor:move;
 }
 
+.stretcher:hover {
+    cursor:ew-resize;
+}
+
 .adder:hover {
     cursor:copy;
+}
+
+.deleter:hover {
+    background-color: tomato;
 }
 
 .fixed {
@@ -35,4 +47,5 @@
 
 .message {
     display: block;
+    resize: none;
 }
