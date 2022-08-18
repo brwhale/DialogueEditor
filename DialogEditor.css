@@ -10,12 +10,19 @@
     color: white;
     padding: 1em;
     border-radius: 1em;
-    max-width: 100px;
 }
 
 .button:hover {
     background-color: chartreuse;
-    cursor: copy;
+    cursor: pointer;
+}
+
+.mover:hover {
+    cursor:move;
+}
+
+.adder:hover {
+    cursor:copy;
 }
 
 .fixed {
@@ -24,4 +31,8 @@
 
 .absolute {
     position: absolute;
+}
+
+.message {
+    display: block;
 }

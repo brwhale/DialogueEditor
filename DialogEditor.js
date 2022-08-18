@@ -3,7 +3,7 @@ let addingChildrenNode = -1;
 let draggingNode = -1;
 
 function addNode() {
-    nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", soundFile: "", pos: {x: 100, y: 200 * nodes.length}, children: []});
+    nodes.push({id: nodes.length, message: "", hideScript: "", actScript: "", soundFile: "", pos: {x: 100, y: document.querySelector("#nodesBox").clientHeight }, children: []});
 
     addingChildrenNode = -1;
     drawNodes();
@@ -47,7 +47,9 @@ function loadFromFile() { }
 function clickedNode(index) {
     event.stopPropagation();
     if (addingChildrenNode >=0 && addingChildrenNode != index) {
-        nodes[addingChildrenNode].children.push(index);
+        if (!nodes[addingChildrenNode].children.includes(index)) {
+            nodes[addingChildrenNode].children.push(index);
+        }
         addingChildrenNode = -1;
         drawNodes();
     }
@@ -102,16 +104,25 @@ function mouseup() {
 function clearSelections() {
     draggingNode = -1;
     addingChildrenNode = -1;
+    document.getElementById("arrow").innerHTML = "";
 }
 
 function drawNodes() {
     document.getElementById("arrow").innerHTML = '';
     let selector = document.querySelector("#nodesBox");
+    let biggest = {x:0, y:0};
     selector.innerHTML = "";
     nodes.forEach((item, index, array) => {
-        let content = "<div id='node"+index+"' class='node absolute' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'onmousedown='mousedownNode(" + index + ")'onmouseup='mouseup()'>";
-        content += "<p>" + index.toString() + "</p>";
-        content += "<a class='button' onclick='wantsChild(" + index + ")'>Add Child</a>";
+        if (biggest.x < item.pos.x) {
+            biggest.x = item.pos.x;
+        }
+        if (biggest.y < item.pos.y) {
+            biggest.y = item.pos.y;
+        }
+        let content = "<div id='node"+index+"' class='node absolute' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'>";
+        content += "<p style='display:inline-block;'>Id: " + index + " </p>";
+        content += "<a style='display:inline-block;'class='button adder' onclick='wantsChild(" + index + ")'>Add Child</a>";
+        content += "<a style='display:inline-block;'class='button mover' onmousedown='mousedownNode(" + index + ")'>Move</a>";
         content += "<textarea id='message"+index+"'class='message' placeholder='Message' onkeyup='updateMessage("+index+")'>";
         content += item.message;
         content += "</textarea>";
@@ -130,10 +141,14 @@ function drawNodes() {
 
       nodes.forEach((item, index, array) => {
         item.children.forEach((c, i, arr) => {
-            selector.innerHTML += getArrow({x:item.pos.x + 100, y:item.pos.y + 130}, {x:nodes[c].pos.x + 200, y:nodes[c].pos.y + 50});
+            selector.innerHTML += getArrow({x:item.pos.x + 100, y:item.pos.y + 50}, {x:nodes[c].pos.x + 200, y:nodes[c].pos.y + 50});
         });
-        
       });
+
+      if (biggest.x > 0) {
+        selector.style.width = 500+biggest.x+"px";
+        selector.style.height = 300+biggest.y+"px";
+      }
 }
 
 function updateAddArrow(origin, point) {
@@ -143,12 +158,16 @@ function updateAddArrow(origin, point) {
 addEventListener('mousemove', (event) => {
     if (addingChildrenNode >= 0) {
         let origin = nodes[addingChildrenNode].pos;
-        updateAddArrow({x:origin.x + 100, y:origin.y+130}, {x:event.clientX + window.pageXOffset, y:event.clientY + window.pageYOffset });
+        updateAddArrow({x:origin.x + 100, y:origin.y+50}, {x:event.clientX + window.pageXOffset, y:event.clientY + window.pageYOffset });
     } else if (draggingNode >= 0) {
         nodes[draggingNode].pos.x += event.movementX;
         nodes[draggingNode].pos.y += event.movementY;
         drawNodes();
     }
+});
+
+addEventListener('mouseup', (event) => {
+    mouseup();
 });
 
 drawNodes();
