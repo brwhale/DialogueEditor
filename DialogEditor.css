@@ -1,4 +1,26 @@
 .node {
     background-color: aquamarine;
     margin: 2em;
+    padding: 1em;
+    border-radius: 1em;
+}
+
+.button {
+    background-color:cornflowerblue;
+    color: white;
+    padding: 1em;
+    border-radius: 1em;
+}
+
+.button:hover {
+    background-color: chartreuse;
+    cursor: copy;
+}
+
+.fixed {
+    position: fixed;
+}
+
+.absolute {
+    position: absolute;
 }
