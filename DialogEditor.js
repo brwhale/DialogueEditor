@@ -13,8 +13,7 @@ function getNewNodePlacement() {
         size.y = Math.max(size.y, item.pos.y + 200);
     });
     let h = 500;
-    let pos = ({x:200, y:0});
-    let dist = 100;
+    let pos = ({x:Math.max(200,window.scrollX), y:window.scrollY});
     let colMode = true;
     while (usedPositions.some(e => Math.abs(e.x - pos.x) < minDist && Math.abs(e.y - pos.y) < minDist)) {
         if (colMode) {
@@ -25,7 +24,7 @@ function getNewNodePlacement() {
             }
         } else {
             pos.x += h;
-            if (pos.x > Math.max(size.x, window.innerWidth)) {
+            if (pos.x + h > Math.max(size.x, window.innerWidth)) {
                 pos.x = 200;
                 pos.y += h;
                 colMode = true;
@@ -184,6 +183,24 @@ function recolorNodes() {
     }
 }
 
+function sortChildren(item, alreadyMoved, usedPositions) {
+    let h = 500;
+    item.children.forEach((c, i, arr) => {
+        if (!c) return;
+        if (!alreadyMoved.includes(c)) {
+            alreadyMoved.push(c);
+            let pos = {x:i * h + item.pos.x, y: h + item.pos.y};
+            while (usedPositions.some(e => Math.abs(e.x - pos.x) < minDist && Math.abs(e.y - pos.y) < minDist)) {
+                pos.x += h;
+            }
+            usedPositions.push(pos);
+            nodes[c].pos.x = pos.x;
+            nodes[c].pos.y = pos.y;
+            sortChildren(nodes[c], alreadyMoved, usedPositions);
+        }
+    });
+}
+
 function sortNodes() {
     let alreadyMoved = [];
     let usedPositions = [];
@@ -197,19 +214,7 @@ function sortNodes() {
             }
             usedPositions.push(item.pos);
         }
-        item.children.forEach((c, i, arr) => {
-            if (!c) return;
-            if (!alreadyMoved.includes(c)) {
-                alreadyMoved.push(c);
-                let pos = {x:i * h + item.pos.x, y: h + item.pos.y};
-                while (usedPositions.some(e => Math.abs(e.x - pos.x) < minDist && Math.abs(e.y - pos.y) < minDist)) {
-                    pos.x += h;
-                }
-                usedPositions.push(pos);
-                nodes[c].pos.x = pos.x;
-                nodes[c].pos.y = pos.y;
-            }
-        });
+        sortChildren(item, alreadyMoved, usedPositions);
       });
     recolorNodes();
     drawNodes();
@@ -284,35 +289,6 @@ function updateAddArrow(origin, point) {
     document.getElementById("arrow").innerHTML = getArrow(origin, point);
 }
 
-addEventListener('mousemove', (event) => {
-    if (addingChildrenNode >= 0) {
-        let origin = nodes[addingChildrenNode].pos;
-        let elem = document.getElementById("node"+addingChildrenNode);
-        updateAddArrow({x:origin.x + elem.clientWidth - 20, y:origin.y+elem.clientHeight}, {x:event.clientX + window.pageXOffset, y:event.clientY + window.pageYOffset });
-    } else if (draggingNode >= 0) {
-        if (resizeMode) {
-            nodes[draggingNode].width += event.movementX;
-        } else {
-            nodes[draggingNode].pos.x += event.movementX;
-            nodes[draggingNode].pos.y += event.movementY;
-        }
-        let elem = document.getElementById("node"+draggingNode);
-        elem.style.top = nodes[draggingNode].pos.y + "px";
-        elem.style.left = nodes[draggingNode].pos.x + "px";
-        elem.style.width = nodes[draggingNode].width + "px";
-        Array.from(elem.getElementsByClassName("message")).forEach((e) => {
-            e.style.width = elem.style.width;
-        });
-        drawArrows();
-    }
-});
-
-addEventListener('mouseup', (event) => {
-    mouseup();
-});
-
-drawNodes();
-
 function download(content) {
     let a = document.createElement('a');
     let file = new Blob([content], {type: "text/plain"});
@@ -368,6 +344,7 @@ function importFile(e) {
     if (!file) {
       return;
     }
+    document.getElementById("exportFile").value = file.name;
     var reader = new FileReader();
     reader.onload = function(e) {
         nodes = JSON.parse(e.target.result);
@@ -379,5 +356,31 @@ function importFile(e) {
     reader.readAsText(file);
   }
   
-document.getElementById('fileImport')
-    .addEventListener('change', importFile, false);
+document.getElementById('fileImport').addEventListener('change', importFile, false);
+
+addEventListener('mousemove', (event) => {
+    if (addingChildrenNode >= 0) {
+        let origin = nodes[addingChildrenNode].pos;
+        let elem = document.getElementById("node"+addingChildrenNode);
+        updateAddArrow({x:origin.x + elem.clientWidth - 20, y:origin.y+elem.clientHeight}, {x:event.clientX + window.pageXOffset, y:event.clientY + window.pageYOffset });
+    } else if (draggingNode >= 0) {
+        if (resizeMode) {
+            nodes[draggingNode].width += event.movementX;
+        } else {
+            nodes[draggingNode].pos.x += event.movementX;
+            nodes[draggingNode].pos.y += event.movementY;
+        }
+        let elem = document.getElementById("node"+draggingNode);
+        elem.style.top = nodes[draggingNode].pos.y + "px";
+        elem.style.left = nodes[draggingNode].pos.x + "px";
+        elem.style.width = nodes[draggingNode].width + "px";
+        Array.from(elem.getElementsByClassName("message")).forEach((e) => {
+            e.style.width = elem.style.width;
+        });
+        drawArrows();
+    }
+});
+
+addEventListener('mouseup', (event) => {mouseup();});
+
+drawNodes();
