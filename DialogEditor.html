@@ -9,10 +9,12 @@
 			<a onclick="addNode()" class="button margined adder">Add Node</a>
 			<a onclick="sortNodes()" class="button margined">Organize</a>
 			<a onclick="exportJson()" class="button margined">Get JSON</a>
-			<textarea id="exportFile" placeholder="filename" class="margined" style="box-sizing: border-box; min-width: calc(100% - 15px); max-width: calc(100% - 15px); width: calc(100% - 15px); height: 4em;"></textarea>
+			<textarea id="exportFile" placeholder="filename" class="margined resizebox"></textarea>
 			<a onclick="document.getElementById('fileImport').click()" class="button margined">Import File</a>
 			<a onclick="clearNodes()" class="button margined deleter">Clear</a>
 			<input type='file' id="fileImport" style="display:none"/>
+			<a onclick="listFuncs()" class="button margined">Used Funcs</a>
+			<textarea id="funcsList" placeholder="used funcs" class="margined resizebox"></textarea>
 		</div>
 		<div onclick="clearSelections()" id="nodesBox">you need javascript enabled to run this</div>
 		<div id="arrows" class="absolute" style="top: 0px;left: 0px;"></div>

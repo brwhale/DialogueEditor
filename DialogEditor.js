@@ -60,7 +60,7 @@ function deleteNode(index) {
 function clearNodes() {
     clearSelections();
     nodes = [];
-    let selector = document.querySelector("#nodesBox");
+    let selector = document.getElementById("nodesBox");
     selector.style.width = "800px";
     selector.style.height = "800px";
     drawNodes();
@@ -159,7 +159,7 @@ function clearSelections() {
 function textAreaAdjust(element) {
     let oldh = element.style.height;
     element.style.height = "1px";
-    element.style.height = (25+element.scrollHeight)+"px";
+    element.style.height = (10+element.scrollHeight)+"px";
     return element.style.height != oldh;
 }
 
@@ -221,22 +221,22 @@ function sortNodes() {
 }
 
 function drawArrows() {
-    document.querySelector("#arrow").innerHTML = ''; // clear temp arrow
-    let selector = document.querySelector("#arrows");
-    selector.innerHTML = '';
+    document.getElementById("arrow").innerHTML = ''; // clear temp arrow
+    let selector = document.getElementById("arrows");
+    let content = '';
     nodes.forEach((item, index, array) => {
         let elem = document.getElementById("node"+index);
         let origin = {x:item.pos.x + elem.clientWidth - 20, y:item.pos.y + elem.clientHeight};
         item.children.forEach((c, i, arr) => {
-            selector.innerHTML += getArrow(origin, {x:nodes[c].pos.x + 200, y:nodes[c].pos.y + 50});
+            content += getArrow(origin, {x:nodes[c].pos.x + 200, y:nodes[c].pos.y + 50});
         });
       });
+    selector.innerHTML = content;
 }
 
 function drawNodes() {
-    let selector = document.querySelector("#nodesBox");
     let biggest = {x:0, y:0};
-    selector.innerHTML = "";
+    let content = "";
     nodes.forEach((item, index, array) => {
         if (biggest.x < item.pos.x) {
             biggest.x = item.pos.x;
@@ -250,10 +250,11 @@ function drawNodes() {
         } else if (item.color > 0) {
             classes += ' alt-color2';
         }
-        let content = "<div id='node"+index+"' class='"+classes+"' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'>";
-        content += "<p style='display:inline-block;'>Id: " + index + " </p>";
+        content += "<div id='node"+index+"' class='"+classes+"' style='top:" + item.pos.y + "px;left:" + item.pos.x + "px;' onclick='clickedNode(" + index + ")'>";
+        content += "<div class='toprow mover' onmousedown='mousedownNode(" + index + ")'>";
+        content += "<p class='idlabel' style='display:inline-block;'>Id: " + index + " </p>";
         content += "<a style='display:inline-block;float:right;'class='button stretcher' onmousedown='resizeNode(" + index + ")'>Resize</a>";
-        content += "<a style='display:inline-block;float:right;'class='button mover' onmousedown='mousedownNode(" + index + ")'>Move</a>";
+        content += "</div>";
         content += "<textarea id='message"+index+"'class='message' style='width: "+item.width+"px;' placeholder='Message' onkeyup='updateMessage("+index+", this)'>";
         content += item.message;
         content += "</textarea>";
@@ -270,8 +271,10 @@ function drawNodes() {
         content += "<a style='display:inline-block;float: right;'class='button adder' onclick='wantsChild(" + index + ")'>Add Child</a>";
         content += "<a style='display:inline-block;float: right;'class='button deleter' onclick='deleteChildren(" + index + ")'>Clear Children</a>";
         content += "</div>";
-        selector.innerHTML += content;
       });
+
+      let selector = document.getElementById("nodesBox");
+      selector.innerHTML = content;
 
       document.querySelectorAll(".message").forEach((item) => {
         textAreaAdjust(item);
@@ -289,6 +292,31 @@ function updateAddArrow(origin, point) {
     document.getElementById("arrow").innerHTML = getArrow(origin, point);
 }
 
+function listFuncs() {
+    let map = {};
+    let regex = /\w+(?=\([^\)]*\))/gm;
+
+    nodes.forEach((item, index, array) => {
+        let search = item.hideScript + item.actScript;
+        let matches = [...search.matchAll(regex)];
+        matches.forEach((match) => {
+            if (!map[match]) {
+                map[match] = 1;
+            } else {
+                map[match]++;
+            }
+        });
+    });
+
+    let content = '';
+
+    for (const p in map) {
+        content += p + ' : ' + map[p] + " calls\n";
+    }
+    
+    document.getElementById("funcsList").value = content;
+}
+
 function download(content) {
     let a = document.createElement('a');
     let file = new Blob([content], {type: "text/plain"});
@@ -296,11 +324,9 @@ function download(content) {
     a.href= URL.createObjectURL(file);
     a.download = document.getElementById("exportFile").value;
     a.click();
-  
     URL.revokeObjectURL(a.href);
-
     a.remove();
-  };
+}
 
 function getJson() {
     return JSON.stringify(nodes);
@@ -335,7 +361,7 @@ function repairNodeMetadata() {
         if (typeof item.color == 'undefined') {
             item.color = 0;
         }
-      });
+    });
     return needsSorting;
 }
 
@@ -354,7 +380,7 @@ function importFile(e) {
         drawNodes();
     };
     reader.readAsText(file);
-  }
+}
   
 document.getElementById('fileImport').addEventListener('change', importFile, false);
 
@@ -364,19 +390,24 @@ addEventListener('mousemove', (event) => {
         let elem = document.getElementById("node"+addingChildrenNode);
         updateAddArrow({x:origin.x + elem.clientWidth - 20, y:origin.y+elem.clientHeight}, {x:event.clientX + window.pageXOffset, y:event.clientY + window.pageYOffset });
     } else if (draggingNode >= 0) {
+        let elem = document.getElementById("node"+draggingNode);
         if (resizeMode) {
             nodes[draggingNode].width += event.movementX;
+            if (nodes[draggingNode].width < 400) {
+                nodes[draggingNode].width = 400;
+            }
+            elem.style.width = nodes[draggingNode].width + "px";
+            let ew = "calc(" + elem.style.width + " - 3em)";
+            Array.from(elem.getElementsByClassName("message")).forEach((e) => {
+                e.style.width = ew;
+            });
         } else {
             nodes[draggingNode].pos.x += event.movementX;
             nodes[draggingNode].pos.y += event.movementY;
+            elem.style.top = nodes[draggingNode].pos.y + "px";
+            elem.style.left = nodes[draggingNode].pos.x + "px";
         }
-        let elem = document.getElementById("node"+draggingNode);
-        elem.style.top = nodes[draggingNode].pos.y + "px";
-        elem.style.left = nodes[draggingNode].pos.x + "px";
-        elem.style.width = nodes[draggingNode].width + "px";
-        Array.from(elem.getElementsByClassName("message")).forEach((e) => {
-            e.style.width = elem.style.width;
-        });
+        
         drawArrows();
     }
 });
