@@ -329,7 +329,7 @@ function download(content) {
 }
 
 function getJson() {
-    return JSON.stringify(nodes);
+    return JSON.stringify(nodes, null, '\t');
 }
 
 function exportJson() {
